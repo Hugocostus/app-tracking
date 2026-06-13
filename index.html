@@ -759,11 +759,13 @@ async function loadStats() {
     // Net = conso - dep - MB, sauf si aucune entrée n'existe ce jour-là → 0
     const nets    = dates.map((d, i) => hasData[i] ? (consos[i] - deps[i] - BASAL_METABOLISM) : 0);
 
-    // ── KPI (moyenne / médiane sur l'ensemble des jours du mois) ─
-    $('kpi-avg-conso').textContent = mean(consos).toLocaleString('fr') + ' kcal';
-    $('kpi-med-conso').textContent = median(consos).toLocaleString('fr') + ' kcal';
-    $('kpi-avg-dep').textContent   = mean(deps).toLocaleString('fr') + ' kcal';
-    $('kpi-med-dep').textContent   = median(deps).toLocaleString('fr') + ' kcal';
+    // ── KPI (moyenne / médiane sur les jours où il y a eu une saisie) ─
+    const consosKpi = consos.filter((_, i) => hasData[i]);
+    const depsKpi   = deps.filter((_, i) => hasData[i]);
+    $('kpi-avg-conso').textContent = mean(consosKpi).toLocaleString('fr') + ' kcal';
+    $('kpi-med-conso').textContent = median(consosKpi).toLocaleString('fr') + ' kcal';
+    $('kpi-avg-dep').textContent   = mean(depsKpi).toLocaleString('fr') + ' kcal';
+    $('kpi-med-dep').textContent   = median(depsKpi).toLocaleString('fr') + ' kcal';
 
     // ── Charts ────────────────────────────────────────────────
     renderChart(dates, nets);
@@ -991,4 +993,5 @@ document.addEventListener('keydown', e => {
 </script>
 </body>
 </html>
+
 
