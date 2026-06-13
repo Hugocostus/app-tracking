@@ -859,15 +859,20 @@ function paletteColors(n) {
 
 // Groups rows of a given type by "poste" and returns
 // { labels: [...], values: [...], total: number }
+// "values" = la MÉDIANE des calories par entrée pour ce poste
+// (et non le cumul), comme demandé.
 function groupByPoste(rows, type) {
   const map = {};
   for (const r of rows) {
     if (r.type !== type) continue;
     const key = (r.poste && r.poste.trim()) ? r.poste.trim() : 'Sans intitulé';
-    map[key] = (map[key] || 0) + r.calories;
+    if (!map[key]) map[key] = [];
+    map[key].push(r.calories);
   }
-  // Sort descending by value for a more readable legend/chart
-  const entries = Object.entries(map).sort((a, b) => b[1] - a[1]);
+  // Médiane par poste, triée décroissante pour un graphique/légende plus lisible
+  const entries = Object.entries(map)
+    .map(([key, arr]) => [key, median(arr)])
+    .sort((a, b) => b[1] - a[1]);
   const labels = entries.map(e => e[0]);
   const values = entries.map(e => e[1]);
   const total  = values.reduce((a, b) => a + b, 0);
@@ -972,3 +977,4 @@ document.addEventListener('keydown', e => {
 </script>
 </body>
 </html>
+
