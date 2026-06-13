@@ -296,7 +296,7 @@
 
     <!-- KPI -->
     <section>
-      <h2 class="text-xs text-muted uppercase tracking-widest mb-3">Mois en cours — KPI</h2>
+      <h2 class="text-xs text-muted uppercase tracking-widest mb-3">30 derniers jours — KPI</h2>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div class="kpi">
           <div class="kpi-val text-accent" id="kpi-avg-conso">—</div>
@@ -319,7 +319,7 @@
 
     <!-- Graphique net quotidien -->
     <section class="bg-panel border border-[#21262d] rounded-xl p-5">
-      <h2 class="text-xs text-muted uppercase tracking-widest mb-1">Net quotidien — mois en cours</h2>
+      <h2 class="text-xs text-muted uppercase tracking-widest mb-1">Net quotidien — 30 derniers jours</h2>
       <p class="text-xs text-muted mb-4" id="net-explain">Net = Consommé − Dépensé sport − MB kcal (métabolisme de base)</p>
       <div class="chart-wrap" style="height:260px">
         <canvas id="chart-net"></canvas>
@@ -328,7 +328,7 @@
 
     <!-- Graphiques répartition par poste -->
     <section class="bg-panel border border-[#21262d] rounded-xl p-5">
-      <h2 class="text-xs text-muted uppercase tracking-widest mb-4">Répartition par poste — mois en cours</h2>
+      <h2 class="text-xs text-muted uppercase tracking-widest mb-4">Répartition par poste — 30 derniers jours</h2>
       <div class="grid sm:grid-cols-2 gap-6">
         <div>
           <h3 class="text-xs text-accent mb-3">Consommation</h3>
@@ -336,7 +336,7 @@
             <canvas id="chart-pie-conso"></canvas>
           </div>
           <div id="legend-conso" class="legend-list"></div>
-          <p id="empty-conso" class="text-muted text-xs hidden">Aucune donnée ce mois</p>
+          <p id="empty-conso" class="text-muted text-xs hidden">Aucune donnée sur cette période</p>
         </div>
         <div>
           <h3 class="text-xs text-gain mb-3">Dépenses (sport)</h3>
@@ -344,7 +344,7 @@
             <canvas id="chart-pie-dep"></canvas>
           </div>
           <div id="legend-dep" class="legend-list"></div>
-          <p id="empty-dep" class="text-muted text-xs hidden">Aucune donnée ce mois</p>
+          <p id="empty-dep" class="text-muted text-xs hidden">Aucune donnée sur cette période</p>
         </div>
       </div>
     </section>
@@ -352,7 +352,7 @@
     <!-- Détail par jour -->
     <section class="bg-panel border border-[#21262d] rounded-xl overflow-hidden">
       <div class="px-5 pt-4 pb-2">
-        <h2 class="text-xs text-muted uppercase tracking-widest">Détail par jour — mois en cours</h2>
+        <h2 class="text-xs text-muted uppercase tracking-widest">Détail par jour — 30 derniers jours</h2>
       </div>
       <div class="overflow-x-auto">
         <table>
@@ -493,6 +493,20 @@ function monthRange() {
   const first = isoLocal(new Date(y, m, 1));
   const last  = isoLocal(new Date(y, m + 1, 0));
   return { first, last };
+}
+
+// Rolling 30-day window ending today (inclusive)
+function last30Range() {
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(start.getDate() - 29);
+  return { first: isoLocal(start), last: isoLocal(today) };
+}
+
+// "YYYY-MM-DD" → "dd/mm"
+function fmtDayMonth(dateStr) {
+  const [, m, d] = dateStr.split('-');
+  return `${d}/${m}`;
 }
 
 // Returns an array of "YYYY-MM-DD" strings covering every day from
@@ -715,12 +729,9 @@ function showModalErr(msg) {
 async function loadStats() {
   // Show the configured MB value in the explanatory caption
   $('net-explain').textContent =
-    `Net = Consommé − Dépensé sport − ${BASAL_METABOLISM.toLocaleString('fr')} kcal (métabolisme de base)`;
+    `Net = Consommé − Dépensé sport − ${BASAL_METABOLISM.toLocaleString('fr')} kcal (MB) · jour sans saisie = 0`;
 
-  const { first, last } = monthRange();
-  const today = todayISO();
-  // The chart covers every day of the month up to today (future days have no data yet)
-  const rangeEnd = (last > today) ? today : last;
+  const { first, last } = last30Range();
 
   try {
     const { data, error } = await db.from('calories')
@@ -740,11 +751,13 @@ async function loadStats() {
       else                            byDay[r.entry_date].dep   += r.calories;
     }
 
-    // ── Build full date list (including days with NO entries) ─
-    const dates  = dateRange(first, rangeEnd);
-    const consos = dates.map(d => (byDay[d] ? byDay[d].conso : 0));
-    const deps   = dates.map(d => (byDay[d] ? byDay[d].dep   : 0));
-    const nets   = dates.map((d, i) => consos[i] - deps[i] - BASAL_METABOLISM);
+    // ── Build full date list for the rolling 30-day window ─────
+    const dates   = dateRange(first, last);
+    const hasData = dates.map(d => !!byDay[d]);
+    const consos  = dates.map(d => (byDay[d] ? byDay[d].conso : 0));
+    const deps    = dates.map(d => (byDay[d] ? byDay[d].dep   : 0));
+    // Net = conso - dep - MB, sauf si aucune entrée n'existe ce jour-là → 0
+    const nets    = dates.map((d, i) => hasData[i] ? (consos[i] - deps[i] - BASAL_METABOLISM) : 0);
 
     // ── KPI (moyenne / médiane sur l'ensemble des jours du mois) ─
     $('kpi-avg-conso').textContent = mean(consos).toLocaleString('fr') + ' kcal';
@@ -757,7 +770,7 @@ async function loadStats() {
     renderPieCharts(rows);
 
     // ── Detail table ──────────────────────────────────────────
-    renderStatsTable(dates, consos, deps, nets);
+    renderStatsTable(dates, consos, deps, nets, hasData);
 
   } catch (e) {
     toast('Erreur stats : ' + e.message, 'err');
@@ -765,7 +778,7 @@ async function loadStats() {
 }
 
 function renderChart(dates, nets) {
-  const labels = dates.map(fmtDateShort);
+  const labels = dates.map(fmtDayMonth);
 
   // Net > 0 means a calorie surplus (red) ; Net <= 0 means a deficit (green)
   const barColors    = nets.map(n => n > 0 ? 'rgba(248,81,73,0.75)' : 'rgba(63,185,80,0.75)');
@@ -825,21 +838,22 @@ function renderChart(dates, nets) {
   });
 }
 
-function renderStatsTable(dates, consos, deps, nets) {
+function renderStatsTable(dates, consos, deps, nets, hasData) {
   if (!dates.length) {
-    $('stats-body').innerHTML = `<tr><td colspan="5" class="text-center text-muted py-6 text-sm">Aucune donnée ce mois</td></tr>`;
+    $('stats-body').innerHTML = `<tr><td colspan="5" class="text-center text-muted py-6 text-sm">Aucune donnée sur cette période</td></tr>`;
     return;
   }
   $('stats-body').innerHTML = dates.map((d, i) => {
     const net = nets[i];
     const netCol = net > 0 ? 'text-[#f85149]' : 'text-gain';
     const netStr = (net > 0 ? '+' : '') + net.toLocaleString('fr');
+    const mbStr  = hasData[i] ? `-${BASAL_METABOLISM.toLocaleString('fr')}` : '0';
     return `
       <tr>
         <td class="text-muted">${fmtDate(d)}</td>
         <td class="text-right text-accent">${consos[i].toLocaleString('fr')}</td>
         <td class="text-right text-gain">${deps[i].toLocaleString('fr')}</td>
-        <td class="text-right text-muted">-${BASAL_METABOLISM.toLocaleString('fr')}</td>
+        <td class="text-right text-muted">${mbStr}</td>
         <td class="text-right font-semibold ${netCol}">${netStr}</td>
       </tr>`;
   }).join('');
