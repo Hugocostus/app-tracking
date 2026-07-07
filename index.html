@@ -14,9 +14,14 @@
     // Dépense calorique automatique et invisible, appliquée
     // chaque jour au calcul du Net Quotidien :
     //   Net = Consommé - Dépensé(sport) - BASAL_METABOLISM
-    // Modifie cette valeur si ton MB change.
     // ──────────────────────────────────────────────────────────
     const BASAL_METABOLISM = 1650;
+
+    // ──────────────────────────────────────────────────────────
+    // INDICE CAMEMBERT
+    // Calories d'un camembert de 250g à 275 kcal/100g
+    // ──────────────────────────────────────────────────────────
+    const CAMEMBERT_KCAL = 275 * 2.5; // = 687.5 kcal
   </script>
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -168,14 +173,15 @@
 </header>
 
 <div class="max-w-5xl mx-auto px-4 border-b border-[#21262d] flex gap-6">
-  <button class="tab-btn active py-3 text-sm border-b-2 font-medium" data-tab="saisie" onclick="switchTab('saisie')">Saisie & Historique</button>
+  <button class="tab-btn active py-3 text-sm border-b-2 font-medium" data-tab="saisie" onclick="switchTab('saisie')">Saisie</button>
+  <button class="tab-btn py-3 text-sm border-b-2 font-medium" data-tab="historique" onclick="switchTab('historique')">Historique</button>
   <button class="tab-btn py-3 text-sm border-b-2 font-medium" data-tab="stats" onclick="switchTab('stats')">Statistiques</button>
+  <button class="tab-btn py-3 text-sm border-b-2 font-medium" data-tab="analyse" onclick="switchTab('analyse')">Analyse</button>
 </div>
 
 <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
 
-  <div id="tab-saisie">
-
+  <div id="tab-saisie" class="space-y-6">
     <section class="bg-panel border border-[#21262d] rounded-xl p-5">
       <h2 class="text-xs text-muted uppercase tracking-widest mb-4">Nouvelle entrée</h2>
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -209,7 +215,7 @@
         <span id="form-err" class="text-xs text-[#f85149] hidden"></span>
       </div>
     </section>
-
+  </div><div id="tab-historique" class="hidden space-y-6">
     <div class="flex items-center gap-3 flex-wrap">
       <label class="text-xs text-muted">Période :</label>
       <select id="hist-period" class="field" style="width:auto" onchange="loadHistory()">
@@ -258,9 +264,7 @@
         </table>
       </div>
     </section>
-
   </div><div id="tab-stats" class="hidden space-y-6">
-
     <section>
       <h2 class="text-xs text-muted uppercase tracking-widest mb-3">30 derniers jours — KPI</h2>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -292,51 +296,70 @@
     </section>
 
     <section class="bg-panel border border-[#21262d] rounded-xl overflow-hidden">
-      <div class="p-5 border-b border-[#21262d]">
-        <h2 class="text-xs text-muted uppercase tracking-widest mb-4">Répartition par poste — 30 derniers jours</h2>
-        <div class="grid sm:grid-cols-2 gap-6">
-          <div>
-            <h3 class="text-xs text-accent mb-3">Consommation</h3>
-            <div class="chart-wrap mb-4" style="height:200px">
-              <canvas id="chart-pie-conso"></canvas>
-            </div>
-            <div id="legend-conso" class="legend-list"></div>
-            <p id="empty-conso" class="text-muted text-xs hidden">Aucune donnée sur cette période</p>
-          </div>
-          <div>
-            <h3 class="text-xs text-gain mb-3">Dépenses (sport)</h3>
-            <div class="chart-wrap mb-4" style="height:200px">
-              <canvas id="chart-pie-dep"></canvas>
-            </div>
-            <div id="legend-dep" class="legend-list"></div>
-            <p id="empty-dep" class="text-muted text-xs hidden">Aucune donnée sur cette période</p>
-          </div>
-        </div>
+      <div class="px-5 pt-4 pb-2">
+        <h2 class="text-xs text-muted uppercase tracking-widest">Détail par jour — 30 derniers jours</h2>
       </div>
-
-      <div>
-        <div class="px-5 pt-4 pb-2">
-          <h2 class="text-xs text-muted uppercase tracking-widest">Détail par jour — 30 derniers jours</h2>
+      <div class="overflow-x-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th class="text-right">Consommé</th>
+              <th class="text-right">Dépensé sport</th>
+              <th class="text-right">MB</th>
+              <th class="text-right">Net</th>
+            </tr>
+          </thead>
+          <tbody id="stats-body">
+            <tr><td colspan="5" class="text-center text-muted py-6 text-sm">Chargement…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div><div id="tab-analyse" class="hidden space-y-6">
+    <section>
+      <h2 class="text-xs text-muted uppercase tracking-widest mb-3">Bilan net — 30 derniers jours</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div class="kpi">
+          <div class="kpi-val" id="ana-avg-net">—</div>
+          <div class="kpi-lbl">moy. net/j (kcal)</div>
         </div>
-        <div class="overflow-x-auto">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th class="text-right">Consommé</th>
-                <th class="text-right">Dépensé sport</th>
-                <th class="text-right">MB</th>
-                <th class="text-right">Net</th>
-              </tr>
-            </thead>
-            <tbody id="stats-body">
-              <tr><td colspan="5" class="text-center text-muted py-6 text-sm">Chargement…</td></tr>
-            </tbody>
-          </table>
+        <div class="kpi">
+          <div class="kpi-val" id="ana-total-net">—</div>
+          <div class="kpi-lbl">net total (kcal)</div>
+        </div>
+        <div class="kpi col-span-2 sm:col-span-1">
+          <div class="flex items-baseline gap-2">
+            <div class="kpi-val text-warn" id="ana-camembert">—</div>
+            <span class="text-warn text-sm">🧀</span>
+          </div>
+          <div class="kpi-lbl">indice camembert (250g)</div>
+          <div class="text-xs text-muted mt-1" id="ana-camembert-sub"></div>
         </div>
       </div>
     </section>
 
+    <section class="bg-panel border border-[#21262d] rounded-xl p-5">
+      <h2 class="text-xs text-muted uppercase tracking-widest mb-4">Répartition par poste — 30 derniers jours</h2>
+      <div class="grid sm:grid-cols-2 gap-6">
+        <div>
+          <h3 class="text-xs text-accent mb-3">Consommation</h3>
+          <div class="chart-wrap mb-4" style="height:200px">
+            <canvas id="chart-pie-conso"></canvas>
+          </div>
+          <div id="legend-conso" class="legend-list"></div>
+          <p id="empty-conso" class="text-muted text-xs hidden">Aucune donnée sur cette période</p>
+        </div>
+        <div>
+          <h3 class="text-xs text-gain mb-3">Dépenses (sport)</h3>
+          <div class="chart-wrap mb-4" style="height:200px">
+            <canvas id="chart-pie-dep"></canvas>
+          </div>
+          <div id="legend-dep" class="legend-list"></div>
+          <p id="empty-dep" class="text-muted text-xs hidden">Aucune donnée sur cette période</p>
+        </div>
+      </div>
+    </section>
   </div></main>
 
 <div id="modal-overlay" onclick="if(event.target===this)closeModal()">
@@ -419,19 +442,12 @@ function mean(arr) {
 }
 
 function fmtDate(dateStr) {
-  // dateStr = "YYYY-MM-DD"
   const [y, m, d] = dateStr.split('-');
   return `${d}/${m}/${y}`;
 }
 
-function fmtDateShort(dateStr) {
-  const [, , d] = dateStr.split('-');
-  return d;
-}
-
 function pad2(n) { return String(n).padStart(2, '0'); }
 
-// Format a Date object as YYYY-MM-DD using LOCAL time (avoids UTC shift bugs)
 function isoLocal(d) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
@@ -453,7 +469,6 @@ function monthRange() {
   return { first, last };
 }
 
-// Rolling 30-day window ending today (inclusive)
 function last30Range() {
   const today = new Date();
   const start = new Date(today);
@@ -461,14 +476,11 @@ function last30Range() {
   return { first: isoLocal(start), last: isoLocal(today) };
 }
 
-// "YYYY-MM-DD" → "dd/mm"
 function fmtDayMonth(dateStr) {
   const [, m, d] = dateStr.split('-');
   return `${d}/${m}`;
 }
 
-// Returns an array of "YYYY-MM-DD" strings covering every day from
-// firstISO to lastISO inclusive (local time, no timezone drift).
 function dateRange(firstISO, lastISO) {
   const [fy, fm, fd] = firstISO.split('-').map(Number);
   const [ly, lm, ld] = lastISO.split('-').map(Number);
@@ -479,6 +491,10 @@ function dateRange(firstISO, lastISO) {
     out.push(isoLocal(d));
   }
   return out;
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ── Connectivity check ───────────────────────────────────────
@@ -496,14 +512,16 @@ async function checkConnection() {
 
 // ── Tab switching ────────────────────────────────────────────
 function switchTab(tab) {
-  ['saisie', 'stats'].forEach(t => {
+  ['saisie', 'historique', 'stats', 'analyse'].forEach(t => {
     $(`tab-${t}`).classList.toggle('hidden', t !== tab);
-    document.querySelector(`[data-tab="${t}"]`).classList.toggle('active', t === tab);
+    const btn = document.querySelector(`[data-tab="${t}"]`);
+    if (btn) btn.classList.toggle('active', t === tab);
   });
-  if (tab === 'stats') loadStats();
+  if (tab === 'historique') loadHistory();
+  if (tab === 'stats' || tab === 'analyse') loadStats();
 }
 
-// ── HISTORY (tab saisie) ─────────────────────────────────────
+// ── HISTORY (tab historique) ─────────────────────────────────
 async function loadHistory() {
   const period = $('hist-period').value;
   showSpinner('hist-spinner', true);
@@ -531,7 +549,6 @@ async function loadHistory() {
 
     renderHistTable(data || []);
 
-    // summary only for today (includes the basal metabolism in the net)
     if (period === 'today') {
       const rows = data || [];
       const conso = rows.filter(r => r.type === 'consommation').reduce((a, r) => a + r.calories, 0);
@@ -577,11 +594,7 @@ function renderHistTable(rows) {
   }).join('');
 }
 
-function escHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ── ADD ENTRY ────────────────────────────────────────────────
+// ── ADD ENTRY (tab saisie) ───────────────────────────────────
 async function addEntry() {
   const date     = $('f-date').value;
   const time     = $('f-time').value;
@@ -602,7 +615,9 @@ async function addEntry() {
     toast('Entrée ajoutée ✓');
     $('f-calories').value = '';
     $('f-poste').value    = '';
-    await loadHistory();
+    if (!$('tab-historique').classList.contains('hidden')) {
+      await loadHistory();
+    }
   } catch (e) {
     showFormErr('Erreur : ' + e.message);
   } finally {
@@ -683,9 +698,8 @@ function showModalErr(msg) {
   el.classList.remove('hidden');
 }
 
-// ── STATS ────────────────────────────────────────────────────
+// ── STATS & ANALYSE ──────────────────────────────────────────
 async function loadStats() {
-  // Show the configured MB value in the explanatory caption
   $('net-explain').textContent =
     `Net = Consommé − Dépensé sport − ${BASAL_METABOLISM.toLocaleString('fr')} kcal (MB) · jour sans saisie = 0`;
 
@@ -701,7 +715,6 @@ async function loadStats() {
     if (error) throw error;
     const rows = data || [];
 
-    // ── Group totals by day ──────────────────────────────────
     const byDay = {};
     for (const r of rows) {
       if (!byDay[r.entry_date]) byDay[r.entry_date] = { conso: 0, dep: 0 };
@@ -709,15 +722,12 @@ async function loadStats() {
       else                            byDay[r.entry_date].dep   += r.calories;
     }
 
-    // ── Build full date list for the rolling 30-day window ─────
     const dates   = dateRange(first, last);
     const hasData = dates.map(d => !!byDay[d]);
     const consos  = dates.map(d => (byDay[d] ? byDay[d].conso : 0));
     const deps    = dates.map(d => (byDay[d] ? byDay[d].dep   : 0));
-    // Net = conso - dep - MB, sauf si aucune entrée n'existe ce jour-là → 0
     const nets    = dates.map((d, i) => hasData[i] ? (consos[i] - deps[i] - BASAL_METABOLISM) : 0);
 
-    // ── KPI (moyenne / médiane sur les jours où il y a eu une saisie) ─
     const consosKpi = consos.filter((_, i) => hasData[i]);
     const depsKpi   = deps.filter((_, i) => hasData[i]);
     $('kpi-avg-conso').textContent = mean(consosKpi).toLocaleString('fr') + ' kcal';
@@ -725,11 +735,30 @@ async function loadStats() {
     $('kpi-avg-dep').textContent   = mean(depsKpi).toLocaleString('fr') + ' kcal';
     $('kpi-med-dep').textContent   = median(depsKpi).toLocaleString('fr') + ' kcal';
 
-    // ── Charts ────────────────────────────────────────────────
+    const totalNet   = nets.reduce((a, b) => a + b, 0);
+    const netsWithData = nets.filter((_, i) => hasData[i]);
+    const avgNet     = netsWithData.length ? Math.round(netsWithData.reduce((a, b) => a + b, 0) / netsWithData.length) : 0;
+    const camembert  = totalNet / CAMEMBERT_KCAL;
+
+    const avgNetEl = $('ana-avg-net');
+    avgNetEl.textContent = (avgNet > 0 ? '+' : '') + avgNet.toLocaleString('fr') + ' kcal';
+    avgNetEl.style.color = avgNet > 0 ? '#f85149' : '#3fb950';
+
+    const totalNetEl = $('ana-total-net');
+    totalNetEl.textContent = (totalNet > 0 ? '+' : '') + Math.round(totalNet).toLocaleString('fr') + ' kcal';
+    totalNetEl.style.color = totalNet > 0 ? '#f85149' : '#3fb950';
+
+    const camEl = $('ana-camembert');
+    const camAbs = Math.abs(camembert);
+    camEl.textContent = (camembert > 0 ? '+' : '-') + camAbs.toFixed(2);
+    camEl.style.color = camembert > 0 ? '#f85149' : '#3fb950';
+    $('ana-camembert-sub').textContent =
+      camembert <= 0
+        ? `${camAbs.toFixed(1)} camembert${camAbs >= 2 ? 's' : ''} de 250g gagnés`
+        : `${camAbs.toFixed(1)} camembert${camAbs >= 2 ? 's' : ''} de 250g en excès`;
+
     renderChart(dates, nets);
     renderPieCharts(rows);
-
-    // ── Detail table ──────────────────────────────────────────
     renderStatsTable(dates, consos, deps, nets, hasData);
 
   } catch (e) {
@@ -739,8 +768,6 @@ async function loadStats() {
 
 function renderChart(dates, nets) {
   const labels = dates.map(fmtDayMonth);
-
-  // Net > 0 means a calorie surplus (red) ; Net <= 0 means a deficit (green)
   const barColors    = nets.map(n => n > 0 ? 'rgba(248,81,73,0.75)' : 'rgba(63,185,80,0.75)');
   const borderColors = nets.map(n => n > 0 ? '#f85149' : '#3fb950');
 
@@ -766,33 +793,17 @@ function renderChart(dates, nets) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#161b22',
-          borderColor: '#21262d',
-          borderWidth: 1,
-          titleColor: '#8b949e',
-          bodyColor: '#e6edf3',
+          backgroundColor: '#161b22', borderColor: '#21262d', borderWidth: 1,
+          titleColor: '#8b949e', bodyColor: '#e6edf3',
           callbacks: {
             title: ctx => 'Jour ' + ctx[0].label,
-            label: ctx => {
-              const v = ctx.raw;
-              return (v > 0 ? '+' : '') + v.toLocaleString('fr') + ' kcal';
-            }
+            label: ctx => (ctx.raw > 0 ? '+' : '') + ctx.raw.toLocaleString('fr') + ' kcal'
           }
         }
       },
       scales: {
-        x: {
-          ticks: { color: '#8b949e', font: { family: 'JetBrains Mono', size: 11 } },
-          grid:  { color: '#21262d' },
-        },
-        y: {
-          ticks: {
-            color: '#8b949e',
-            font: { family: 'JetBrains Mono', size: 11 },
-            callback: v => (v > 0 ? '+' : '') + v.toLocaleString('fr')
-          },
-          grid: { color: '#21262d' },
-        }
+        x: { ticks: { color: '#8b949e', font: { family: 'JetBrains Mono', size: 11 } }, grid: { color: '#21262d' } },
+        y: { ticks: { color: '#8b949e', font: { family: 'JetBrains Mono', size: 11 }, callback: v => (v > 0 ? '+' : '') + v.toLocaleString('fr') }, grid: { color: '#21262d' } }
       }
     }
   });
@@ -819,22 +830,14 @@ function renderStatsTable(dates, consos, deps, nets, hasData) {
   }).join('');
 }
 
-// ── DONUT CHARTS: répartition par poste ──────────────────────
-
-// Generates N visually distinct, evenly-spaced HSL colors
 function paletteColors(n) {
   const colors = [];
   for (let i = 0; i < n; i++) {
-    const hue = Math.round((360 / n) * i);
-    colors.push(`hsl(${hue}, 65%, 58%)`);
+    colors.push(`hsl(${Math.round((360 / n) * i)}, 65%, 58%)`);
   }
   return colors;
 }
 
-// Groups rows of a given type by "poste" and returns
-// { labels: [...], values: [...], total: number }
-// "values" = la MÉDIANE des calories par entrée pour ce poste
-// (et non le cumul), comme demandé.
 function groupByPoste(rows, type) {
   const map = {};
   for (const r of rows) {
@@ -843,41 +846,28 @@ function groupByPoste(rows, type) {
     if (!map[key]) map[key] = [];
     map[key].push(r.calories);
   }
-  // Médiane par poste, triée décroissante pour un graphique/légende plus lisible
   const entries = Object.entries(map)
     .map(([key, arr]) => [key, median(arr)])
     .sort((a, b) => b[1] - a[1]);
-  const labels = entries.map(e => e[0]);
-  const values = entries.map(e => e[1]);
-  const total  = values.reduce((a, b) => a + b, 0);
-  return { labels, values, total };
+  return { labels: entries.map(e => e[0]), values: entries.map(e => e[1]), total: entries.map(e => e[1]).reduce((a, b) => a + b, 0) };
 }
 
 function renderPieCharts(rows) {
   const conso = groupByPoste(rows, 'consommation');
   const dep   = groupByPoste(rows, 'depense');
-
   renderSinglePie('chart-pie-conso', 'legend-conso', 'empty-conso', conso, chartPieConso, c => chartPieConso = c);
   renderSinglePie('chart-pie-dep',   'legend-dep',   'empty-dep',   dep,   chartPieDep,   c => chartPieDep   = c);
 }
 
 function renderSinglePie(canvasId, legendId, emptyId, group, existingChart, setChart) {
   if (existingChart) existingChart.destroy();
-
-  const emptyEl  = $(emptyId);
-  const legendEl = $(legendId);
-  const canvasEl = $(canvasId);
+  const emptyEl = $(emptyId), legendEl = $(legendId), canvasEl = $(canvasId);
 
   if (!group.labels.length || group.total === 0) {
-    emptyEl.classList.remove('hidden');
-    legendEl.innerHTML = '';
-    canvasEl.style.display = 'none';
-    setChart(null);
-    return;
+    emptyEl.classList.remove('hidden'); legendEl.innerHTML = ''; canvasEl.style.display = 'none';
+    setChart(null); return;
   }
-
-  emptyEl.classList.add('hidden');
-  canvasEl.style.display = 'block';
+  emptyEl.classList.add('hidden'); canvasEl.style.display = 'block';
 
   const colors = paletteColors(group.labels.length);
   const total  = group.total;
@@ -885,66 +875,39 @@ function renderSinglePie(canvasId, legendId, emptyId, group, existingChart, setC
   const ctx = canvasEl.getContext('2d');
   const chart = new Chart(ctx, {
     type: 'doughnut',
-    data: {
-      labels: group.labels,
-      datasets: [{
-        data: group.values,
-        backgroundColor: colors,
-        borderColor: '#0f1117',
-        borderWidth: 2,
-      }]
-    },
+    data: { labels: group.labels, datasets: [{ data: group.values, backgroundColor: colors, borderColor: '#0f1117', borderWidth: 2 }] },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '62%',
+      responsive: true, maintainAspectRatio: false, cutout: '62%',
       plugins: {
-        legend: { display: false }, // custom legend rendered below the chart
+        legend: { display: false },
         tooltip: {
-          backgroundColor: '#161b22',
-          borderColor: '#21262d',
-          borderWidth: 1,
-          titleColor: '#e6edf3',
-          bodyColor: '#e6edf3',
-          callbacks: {
-            label: ctx => {
-              const val = ctx.raw;
-              const pct = total > 0 ? (val / total * 100) : 0;
-              return ` ${val.toLocaleString('fr')} kcal  (${pct.toFixed(1)}%)`;
-            }
-          }
+          backgroundColor: '#161b22', borderColor: '#21262d', borderWidth: 1, titleColor: '#e6edf3', bodyColor: '#e6edf3',
+          callbacks: { label: ctx => ` ${ctx.raw.toLocaleString('fr')} kcal  (${(total > 0 ? (ctx.raw / total * 100) : 0).toFixed(1)}%)` }
         }
       }
     }
   });
   setChart(chart);
 
-  // ── Custom legend: name, absolute value (kcal) and relative (%) ──
   legendEl.innerHTML = group.labels.map((label, i) => {
     const val = group.values[i];
-    const pct = total > 0 ? (val / total * 100) : 0;
     return `
       <div class="legend-row">
         <div class="legend-left">
           <span class="legend-dot" style="background:${colors[i]}"></span>
           <span class="legend-name">${escHtml(label)}</span>
         </div>
-        <span class="legend-vals">${val.toLocaleString('fr')} kcal · ${pct.toFixed(1)}%</span>
+        <span class="legend-vals">${val.toLocaleString('fr')} kcal · ${(total > 0 ? (val / total * 100) : 0).toFixed(1)}%</span>
       </div>`;
   }).join('');
 }
 
-// ── KEYBOARD: Escape closes modal ─────────────────────────────
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeModal();
-});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 // ── INIT ─────────────────────────────────────────────────────
 (async function init() {
-  // Set default form date/time
   $('f-date').value = todayISO();
   $('f-time').value = nowTime();
-
   await checkConnection();
   await loadHistory();
 })();
