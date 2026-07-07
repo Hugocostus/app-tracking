@@ -79,9 +79,10 @@
     /* buttons */
     .btn-primary {
       background:#58a6ff; color:#0d1117; font-weight:600;
-      border:none; border-radius:6px; padding:.5rem 1.25rem;
+      border:none; border-radius:6px; padding:.5rem .125rem;
       cursor:pointer; font-family:inherit; font-size:.85rem;
       transition: opacity .15s;
+      width: 120px; text-align: center;
     }
     .btn-primary:hover { opacity:.85; }
     .btn-primary:disabled { opacity:.4; cursor:not-allowed; }
@@ -173,8 +174,7 @@
 </header>
 
 <div class="max-w-5xl mx-auto px-4 border-b border-[#21262d] flex gap-6">
-  <button class="tab-btn active py-3 text-sm border-b-2 font-medium" data-tab="saisie" onclick="switchTab('saisie')">Saisie</button>
-  <button class="tab-btn py-3 text-sm border-b-2 font-medium" data-tab="historique" onclick="switchTab('historique')">Historique</button>
+  <button class="tab-btn active py-3 text-sm border-b-2 font-medium" data-tab="saisie" onclick="switchTab('saisie')">Saisie & Historique</button>
   <button class="tab-btn py-3 text-sm border-b-2 font-medium" data-tab="stats" onclick="switchTab('stats')">Statistiques</button>
   <button class="tab-btn py-3 text-sm border-b-2 font-medium" data-tab="analyse" onclick="switchTab('analyse')">Analyse</button>
 </div>
@@ -215,58 +215,72 @@
         <span id="form-err" class="text-xs text-[#f85149] hidden"></span>
       </div>
     </section>
-  </div><div id="tab-historique" class="hidden space-y-6">
+
+    <div class="space-y-4 pt-4 border-t border-[#21262d]">
+      <div class="flex items-center gap-3 flex-wrap">
+        <label class="text-xs text-muted">Période :</label>
+        <select id="hist-period" class="field" style="width:auto" onchange="updatePeriod(this.value)">
+          <option value="today">Aujourd'hui</option>
+          <option value="week">7 derniers jours</option>
+          <option value="month" selected>Mois en cours</option>
+          <option value="all">Tout</option>
+        </select>
+        <span id="hist-spinner" class="hidden"><span class="spin"></span></span>
+      </div>
+
+      <div id="day-summary" class="hidden flex-wrap gap-3">
+        <div class="kpi flex-1 min-w-[120px]">
+          <div class="kpi-val text-accent" id="sum-conso">—</div>
+          <div class="kpi-lbl">consommé (kcal)</div>
+        </div>
+        <div class="kpi flex-1 min-w-[120px]">
+          <div class="kpi-val text-gain" id="sum-dep">—</div>
+          <div class="kpi-lbl">dépensé sport (kcal)</div>
+        </div>
+        <div class="kpi flex-1 min-w-[120px]">
+          <div class="kpi-val text-muted" id="sum-mb">—</div>
+          <div class="kpi-lbl">métabolisme de base</div>
+        </div>
+        <div class="kpi flex-1 min-w-[120px]">
+          <div class="kpi-val" id="sum-net">—</div>
+          <div class="kpi-lbl">net (kcal)</div>
+        </div>
+      </div>
+
+      <section class="bg-panel border border-[#21262d] rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Date & Heure</th>
+                <th>Type</th>
+                <th class="text-right">kcal</th>
+                <th>Poste</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="hist-body">
+              <tr><td colspan="5" class="text-center text-muted py-8 text-sm">Chargement…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="tab-stats" class="hidden space-y-6">
     <div class="flex items-center gap-3 flex-wrap">
       <label class="text-xs text-muted">Période :</label>
-      <select id="hist-period" class="field" style="width:auto" onchange="loadHistory()">
+      <select id="stats-period" class="field" style="width:auto" onchange="updatePeriod(this.value)">
         <option value="today">Aujourd'hui</option>
         <option value="week">7 derniers jours</option>
         <option value="month" selected>Mois en cours</option>
         <option value="all">Tout</option>
       </select>
-      <span id="hist-spinner" class="hidden"><span class="spin"></span></span>
     </div>
 
-    <div id="day-summary" class="hidden flex-wrap gap-3">
-      <div class="kpi flex-1 min-w-[120px]">
-        <div class="kpi-val text-accent" id="sum-conso">—</div>
-        <div class="kpi-lbl">consommé (kcal)</div>
-      </div>
-      <div class="kpi flex-1 min-w-[120px]">
-        <div class="kpi-val text-gain" id="sum-dep">—</div>
-        <div class="kpi-lbl">dépensé sport (kcal)</div>
-      </div>
-      <div class="kpi flex-1 min-w-[120px]">
-        <div class="kpi-val text-muted" id="sum-mb">—</div>
-        <div class="kpi-lbl">métabolisme de base</div>
-      </div>
-      <div class="kpi flex-1 min-w-[120px]">
-        <div class="kpi-val" id="sum-net">—</div>
-        <div class="kpi-lbl">net (kcal)</div>
-      </div>
-    </div>
-
-    <section class="bg-panel border border-[#21262d] rounded-xl overflow-hidden">
-      <div class="overflow-x-auto">
-        <table>
-          <thead>
-            <tr>
-              <th>Date & Heure</th>
-              <th>Type</th>
-              <th class="text-right">kcal</th>
-              <th>Poste</th>
-              <th class="text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="hist-body">
-            <tr><td colspan="5" class="text-center text-muted py-8 text-sm">Chargement…</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </div><div id="tab-stats" class="hidden space-y-6">
     <section>
-      <h2 class="text-xs text-muted uppercase tracking-widest mb-3">30 derniers jours — KPI</h2>
+      <h2 id="stats-kpi-title" class="text-xs text-muted uppercase tracking-widest mb-3">Mois en cours — KPI</h2>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div class="kpi">
           <div class="kpi-val text-accent" id="kpi-avg-conso">—</div>
@@ -288,7 +302,7 @@
     </section>
 
     <section class="bg-panel border border-[#21262d] rounded-xl p-5">
-      <h2 class="text-xs text-muted uppercase tracking-widest mb-1">Net quotidien — 30 derniers jours</h2>
+      <h2 id="stats-net-title" class="text-xs text-muted uppercase tracking-widest mb-1">Net quotidien — Mois en cours</h2>
       <p class="text-xs text-muted mb-4" id="net-explain">Net = Consommé − Dépensé sport − MB kcal (métabolisme de base)</p>
       <div class="chart-wrap" style="height:260px">
         <canvas id="chart-net"></canvas>
@@ -297,7 +311,7 @@
 
     <section class="bg-panel border border-[#21262d] rounded-xl overflow-hidden">
       <div class="px-5 pt-4 pb-2">
-        <h2 class="text-xs text-muted uppercase tracking-widest">Détail par jour — 30 derniers jours</h2>
+        <h2 id="stats-detail-title" class="text-xs text-muted uppercase tracking-widest">Détail par jour — Mois en cours</h2>
       </div>
       <div class="overflow-x-auto">
         <table>
@@ -316,9 +330,21 @@
         </table>
       </div>
     </section>
-  </div><div id="tab-analyse" class="hidden space-y-6">
+  </div>
+
+  <div id="tab-analyse" class="hidden space-y-6">
+    <div class="flex items-center gap-3 flex-wrap">
+      <label class="text-xs text-muted">Période :</label>
+      <select id="analyse-period" class="field" style="width:auto" onchange="updatePeriod(this.value)">
+        <option value="today">Aujourd'hui</option>
+        <option value="week">7 derniers jours</option>
+        <option value="month" selected>Mois en cours</option>
+        <option value="all">Tout</option>
+      </select>
+    </div>
+
     <section>
-      <h2 class="text-xs text-muted uppercase tracking-widest mb-3">Bilan net — 30 derniers jours</h2>
+      <h2 id="analyse-bilan-title" class="text-xs text-muted uppercase tracking-widest mb-3">Bilan net — Mois en cours</h2>
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div class="kpi">
           <div class="kpi-val" id="ana-avg-net">—</div>
@@ -340,7 +366,7 @@
     </section>
 
     <section class="bg-panel border border-[#21262d] rounded-xl p-5">
-      <h2 class="text-xs text-muted uppercase tracking-widest mb-4">Répartition par poste — 30 derniers jours</h2>
+      <h2 id="analyse-repart-title" class="text-xs text-muted uppercase tracking-widest mb-4">Répartition par poste — Mois en cours</h2>
       <div class="grid sm:grid-cols-2 gap-6">
         <div>
           <h3 class="text-xs text-accent mb-3">Consommation</h3>
@@ -360,7 +386,8 @@
         </div>
       </div>
     </section>
-  </div></main>
+  </div>
+</main>
 
 <div id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div id="modal-box">
@@ -426,7 +453,7 @@ function toast(msg, type = 'ok') {
 }
 
 function showSpinner(id, show) {
-  $(id).classList.toggle('hidden', !show);
+  if ($(id)) $(id).classList.toggle('hidden', !show);
 }
 
 function median(arr) {
@@ -469,13 +496,6 @@ function monthRange() {
   return { first, last };
 }
 
-function last30Range() {
-  const today = new Date();
-  const start = new Date(today);
-  start.setDate(start.getDate() - 29);
-  return { first: isoLocal(start), last: isoLocal(today) };
-}
-
 function fmtDayMonth(dateStr) {
   const [, m, d] = dateStr.split('-');
   return `${d}/${m}`;
@@ -497,6 +517,13 @@ function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+function getPeriodLabel(period) {
+  if (period === 'today') return "Aujourd'hui";
+  if (period === 'week') return "7 derniers jours";
+  if (period === 'month') return "Mois en cours";
+  return "Tout l'historique";
+}
+
 // ── Connectivity check ───────────────────────────────────────
 async function checkConnection() {
   try {
@@ -510,18 +537,32 @@ async function checkConnection() {
   }
 }
 
+// ── Gestion synchronisée de la période ───────────────────────
+function updatePeriod(val) {
+  if ($('hist-period')) $('hist-period').value = val;
+  if ($('stats-period')) $('stats-period').value = val;
+  if ($('analyse-period')) $('analyse-period').value = val;
+
+  const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
+  if (activeTab === 'saisie') {
+    loadHistory();
+  } else {
+    loadStats();
+  }
+}
+
 // ── Tab switching ────────────────────────────────────────────
 function switchTab(tab) {
-  ['saisie', 'historique', 'stats', 'analyse'].forEach(t => {
+  ['saisie', 'stats', 'analyse'].forEach(t => {
     $(`tab-${t}`).classList.toggle('hidden', t !== tab);
     const btn = document.querySelector(`[data-tab="${t}"]`);
     if (btn) btn.classList.toggle('active', t === tab);
   });
-  if (tab === 'historique') loadHistory();
+  if (tab === 'saisie') loadHistory();
   if (tab === 'stats' || tab === 'analyse') loadStats();
 }
 
-// ── HISTORY (tab historique) ─────────────────────────────────
+// ── HISTORY (tab Saisie & Historique) ────────────────────────
 async function loadHistory() {
   const period = $('hist-period').value;
   showSpinner('hist-spinner', true);
@@ -594,7 +635,7 @@ function renderHistTable(rows) {
   }).join('');
 }
 
-// ── ADD ENTRY (tab saisie) ───────────────────────────────────
+// ── ADD ENTRY ────────────────────────────────────────────────
 async function addEntry() {
   const date     = $('f-date').value;
   const time     = $('f-time').value;
@@ -615,9 +656,7 @@ async function addEntry() {
     toast('Entrée ajoutée ✓');
     $('f-calories').value = '';
     $('f-poste').value    = '';
-    if (!$('tab-historique').classList.contains('hidden')) {
-      await loadHistory();
-    }
+    await loadHistory();
   } catch (e) {
     showFormErr('Erreur : ' + e.message);
   } finally {
@@ -698,22 +737,53 @@ function showModalErr(msg) {
   el.classList.remove('hidden');
 }
 
-// ── STATS & ANALYSE ──────────────────────────────────────────
+// ── STATS & ANALYSE GENERICS ─────────────────────────────────
 async function loadStats() {
+  const period = $('hist-period').value; // lit la période synchronisée
+  const labelText = getPeriodLabel(period);
+
+  // Mise à jour dynamique des en-têtes selon la période sélectionnée
+  if ($('stats-kpi-title')) $('stats-kpi-title').textContent = `${labelText} — KPI`;
+  if ($('stats-net-title')) $('stats-net-title').textContent = `Net quotidien — ${labelText}`;
+  if ($('stats-detail-title')) $('stats-detail-title').textContent = `Détail par jour — ${labelText}`;
+  if ($('analyse-bilan-title')) $('analyse-bilan-title').textContent = `Bilan net — ${labelText}`;
+  if ($('analyse-repart-title')) $('analyse-repart-title').textContent = `Répartition par poste — ${labelText}`;
+
   $('net-explain').textContent =
     `Net = Consommé − Dépensé sport − ${BASAL_METABOLISM.toLocaleString('fr')} kcal (MB) · jour sans saisie = 0`;
 
-  const { first, last } = last30Range();
-
   try {
-    const { data, error } = await db.from('calories')
-      .select('*')
-      .gte('entry_date', first)
-      .lte('entry_date', last)
-      .order('entry_date', { ascending: true });
+    let query = db.from('calories').select('*').order('entry_date', { ascending: true });
 
+    let first, last;
+    const today = todayISO();
+
+    if (period === 'today') {
+      first = today; last = today;
+      query = query.eq('entry_date', today);
+    } else if (period === 'week') {
+      const d = new Date(); d.setDate(d.getDate() - 6);
+      first = isoLocal(d); last = today;
+      query = query.gte('entry_date', first).lte('entry_date', last);
+    } else if (period === 'month') {
+      const range = monthRange();
+      first = range.first; last = range.last;
+      query = query.gte('entry_date', first).lte('entry_date', last);
+    }
+
+    const { data, error } = await query;
     if (error) throw error;
     const rows = data || [];
+
+    // Détermination de la plage complète si l'option "Tout" est sélectionnée
+    if (period === 'all') {
+      if (rows.length > 0) {
+        first = rows[0].entry_date;
+        last = rows[rows.length - 1].entry_date;
+      } else {
+        first = today; last = today;
+      }
+    }
 
     const byDay = {};
     for (const r of rows) {
