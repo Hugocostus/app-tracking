@@ -38,13 +38,19 @@
     // Modifie cette valeur si ton MB change.
     // ──────────────────────────────────────────────────────────
     const BASAL_METABOLISM = 1650;
+ 
+    // ──────────────────────────────────────────────────────────
+    // INDICE CAMEMBERT
+    // Calories d'un camembert de 250g à 275 kcal/100g
+    // ──────────────────────────────────────────────────────────
+    const CAMEMBERT_KCAL = 275 * 2.5; // = 687.5 kcal
   </script>
-
+ 
   <!-- CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-
+ 
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -67,22 +73,22 @@
       }
     }
   </script>
-
+ 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
-
+ 
   <style>
     * { box-sizing: border-box; }
     body { background:#0f1117; color:#e6edf3; font-family:'JetBrains Mono',ui-monospace,monospace; }
     ::-webkit-scrollbar { width:4px; height:4px; }
     ::-webkit-scrollbar-track { background:#161b22; }
     ::-webkit-scrollbar-thumb { background:#21262d; border-radius:4px; }
-
+ 
     /* tabs */
     .tab-btn { transition: color .15s, border-color .15s; }
     .tab-btn.active { color:#58a6ff; border-color:#58a6ff; }
     .tab-btn:not(.active) { color:#8b949e; border-color:transparent; }
-
+ 
     /* inputs */
     .field {
       background:#161b22; border:1px solid #21262d; color:#e6edf3;
@@ -92,7 +98,7 @@
     }
     .field:focus { border-color:#58a6ff; }
     .field option { background:#161b22; }
-
+ 
     /* buttons */
     .btn-primary {
       background:#58a6ff; color:#0d1117; font-weight:600;
@@ -116,7 +122,7 @@
       transition: color .15s, border-color .15s;
     }
     .btn-danger:hover { color:#f85149; border-color:#f85149; }
-
+ 
     /* table */
     table { border-collapse:collapse; width:100%; }
     th { color:#8b949e; font-weight:500; font-size:.72rem; text-transform:uppercase;
@@ -125,16 +131,16 @@
     td { padding:.6rem 1rem; font-size:.82rem; border-bottom:1px solid #161b22; vertical-align:middle; }
     tr:last-child td { border-bottom:none; }
     tr:hover td { background:#161b22; }
-
+ 
     /* badge */
     .badge-conso { color:#58a6ff; background:#58a6ff18; padding:.15rem .5rem; border-radius:4px; font-size:.7rem; }
     .badge-dep   { color:#3fb950; background:#3fb95018; padding:.15rem .5rem; border-radius:4px; font-size:.7rem; }
-
+ 
     /* kpi card */
     .kpi { background:#161b22; border:1px solid #21262d; border-radius:8px; padding:1rem 1.25rem; }
     .kpi-val { font-size:1.4rem; font-weight:600; }
     .kpi-lbl { font-size:.7rem; color:#8b949e; text-transform:uppercase; letter-spacing:.06em; margin-top:.15rem; }
-
+ 
     /* toast */
     #toast {
       position:fixed; bottom:1.5rem; right:1.5rem;
@@ -145,7 +151,7 @@
       z-index:999; max-width:280px;
     }
     #toast.show { transform:translateY(0); opacity:1; }
-
+ 
     /* modal overlay */
     #modal-overlay {
       display:none; position:fixed; inset:0;
@@ -157,16 +163,16 @@
       background:#161b22; border:1px solid #21262d;
       border-radius:10px; padding:1.5rem; width:min(420px,92vw);
     }
-
+ 
     /* spinner */
     .spin { display:inline-block; width:14px; height:14px;
       border:2px solid #21262d; border-top-color:#58a6ff;
       border-radius:50%; animation:spin .6s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
-
+ 
     /* chart wrap */
     .chart-wrap { position:relative; }
-
+ 
     /* donut legend */
     .legend-list { display:flex; flex-direction:column; gap:.4rem; font-size:.78rem; }
     .legend-row { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
@@ -177,7 +183,7 @@
   </style>
 </head>
 <body class="min-h-screen">
-
+ 
 <!-- ── HEADER ─────────────────────────────────────────────── -->
 <header class="border-b border-[#21262d] px-4 py-3 flex items-center justify-between max-w-5xl mx-auto">
   <div class="flex items-center gap-2">
@@ -189,19 +195,20 @@
     <span id="conn-label">connexion…</span>
   </div>
 </header>
-
+ 
 <!-- ── TABS ───────────────────────────────────────────────── -->
 <div class="max-w-5xl mx-auto px-4 border-b border-[#21262d] flex gap-6">
   <button class="tab-btn active py-3 text-sm border-b-2 font-medium" data-tab="saisie" onclick="switchTab('saisie')">Saisie & Historique</button>
   <button class="tab-btn py-3 text-sm border-b-2 font-medium" data-tab="stats" onclick="switchTab('stats')">Statistiques</button>
+  <button class="tab-btn py-3 text-sm border-b-2 font-medium" data-tab="analyse" onclick="switchTab('analyse')">Analyse</button>
 </div>
-
+ 
 <!-- ── MAIN ───────────────────────────────────────────────── -->
 <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
-
+ 
   <!-- ════ TAB SAISIE ════ -->
   <div id="tab-saisie">
-
+ 
     <!-- Formulaire d'ajout -->
     <section class="bg-panel border border-[#21262d] rounded-xl p-5">
       <h2 class="text-xs text-muted uppercase tracking-widest mb-4">Nouvelle entrée</h2>
@@ -236,7 +243,7 @@
         <span id="form-err" class="text-xs text-[#f85149] hidden"></span>
       </div>
     </section>
-
+ 
     <!-- Filtres historique -->
     <div class="flex items-center gap-3 flex-wrap">
       <label class="text-xs text-muted">Période :</label>
@@ -248,7 +255,7 @@
       </select>
       <span id="hist-spinner" class="hidden"><span class="spin"></span></span>
     </div>
-
+ 
     <!-- Résumé journée -->
     <div id="day-summary" class="hidden flex-wrap gap-3">
       <div class="kpi flex-1 min-w-[120px]">
@@ -268,7 +275,7 @@
         <div class="kpi-lbl">net (kcal)</div>
       </div>
     </div>
-
+ 
     <!-- Tableau historique -->
     <section class="bg-panel border border-[#21262d] rounded-xl overflow-hidden">
       <div class="overflow-x-auto">
@@ -288,12 +295,12 @@
         </table>
       </div>
     </section>
-
+ 
   </div><!-- /tab-saisie -->
-
+ 
   <!-- ════ TAB STATS ════ -->
   <div id="tab-stats" class="hidden space-y-6">
-
+ 
     <!-- KPI -->
     <section>
       <h2 class="text-xs text-muted uppercase tracking-widest mb-3">30 derniers jours — KPI</h2>
@@ -316,7 +323,7 @@
         </div>
       </div>
     </section>
-
+ 
     <!-- Graphique net quotidien -->
     <section class="bg-panel border border-[#21262d] rounded-xl p-5">
       <h2 class="text-xs text-muted uppercase tracking-widest mb-1">Net quotidien — 30 derniers jours</h2>
@@ -325,30 +332,7 @@
         <canvas id="chart-net"></canvas>
       </div>
     </section>
-
-    <!-- Graphiques répartition par poste -->
-    <section class="bg-panel border border-[#21262d] rounded-xl p-5">
-      <h2 class="text-xs text-muted uppercase tracking-widest mb-4">Répartition par poste — 30 derniers jours</h2>
-      <div class="grid sm:grid-cols-2 gap-6">
-        <div>
-          <h3 class="text-xs text-accent mb-3">Consommation</h3>
-          <div class="chart-wrap mb-4" style="height:200px">
-            <canvas id="chart-pie-conso"></canvas>
-          </div>
-          <div id="legend-conso" class="legend-list"></div>
-          <p id="empty-conso" class="text-muted text-xs hidden">Aucune donnée sur cette période</p>
-        </div>
-        <div>
-          <h3 class="text-xs text-gain mb-3">Dépenses (sport)</h3>
-          <div class="chart-wrap mb-4" style="height:200px">
-            <canvas id="chart-pie-dep"></canvas>
-          </div>
-          <div id="legend-dep" class="legend-list"></div>
-          <p id="empty-dep" class="text-muted text-xs hidden">Aucune donnée sur cette période</p>
-        </div>
-      </div>
-    </section>
-
+ 
     <!-- Détail par jour -->
     <section class="bg-panel border border-[#21262d] rounded-xl overflow-hidden">
       <div class="px-5 pt-4 pb-2">
@@ -371,11 +355,62 @@
         </table>
       </div>
     </section>
-
+ 
   </div><!-- /tab-stats -->
-
+ 
+  <!-- ════ TAB ANALYSE ════ -->
+  <div id="tab-analyse" class="hidden space-y-6">
+ 
+    <!-- KPI bilan net -->
+    <section>
+      <h2 class="text-xs text-muted uppercase tracking-widest mb-3">Bilan net — 30 derniers jours</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div class="kpi">
+          <div class="kpi-val" id="ana-avg-net">—</div>
+          <div class="kpi-lbl">moy. net/j (kcal)</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-val" id="ana-total-net">—</div>
+          <div class="kpi-lbl">net total (kcal)</div>
+        </div>
+        <div class="kpi col-span-2 sm:col-span-1">
+          <div class="flex items-baseline gap-2">
+            <div class="kpi-val text-warn" id="ana-camembert">—</div>
+            <span class="text-warn text-sm">🧀</span>
+          </div>
+          <div class="kpi-lbl">indice camembert (250g)</div>
+          <div class="text-xs text-muted mt-1" id="ana-camembert-sub"></div>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- Graphiques répartition par poste -->
+    <section class="bg-panel border border-[#21262d] rounded-xl p-5">
+      <h2 class="text-xs text-muted uppercase tracking-widest mb-4">Répartition par poste — 30 derniers jours</h2>
+      <div class="grid sm:grid-cols-2 gap-6">
+        <div>
+          <h3 class="text-xs text-accent mb-3">Consommation</h3>
+          <div class="chart-wrap mb-4" style="height:200px">
+            <canvas id="chart-pie-conso"></canvas>
+          </div>
+          <div id="legend-conso" class="legend-list"></div>
+          <p id="empty-conso" class="text-muted text-xs hidden">Aucune donnée sur cette période</p>
+        </div>
+        <div>
+          <h3 class="text-xs text-gain mb-3">Dépenses (sport)</h3>
+          <div class="chart-wrap mb-4" style="height:200px">
+            <canvas id="chart-pie-dep"></canvas>
+          </div>
+          <div id="legend-dep" class="legend-list"></div>
+          <p id="empty-dep" class="text-muted text-xs hidden">Aucune donnée sur cette période</p>
+        </div>
+      </div>
+    </section>
+ 
+  </div><!-- /tab-analyse -->
+ 
 </main>
-
+ 
 <!-- ── MODAL ÉDITION ──────────────────────────────────────── -->
 <div id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div id="modal-box">
@@ -416,10 +451,10 @@
     <p id="modal-err" class="text-xs text-[#f85149] mt-2 hidden"></p>
   </div>
 </div>
-
+ 
 <!-- ── TOAST ──────────────────────────────────────────────── -->
 <div id="toast"></div>
-
+ 
 <!-- ══════════════════════════════════════════════════════════
      JAVASCRIPT
 ══════════════════════════════════════════════════════════ -->
@@ -427,15 +462,15 @@
 // ── Supabase client ──────────────────────────────────────────
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+ 
 // ── State ────────────────────────────────────────────────────
 let chartNet      = null;
 let chartPieConso = null;
 let chartPieDep   = null;
-
+ 
 // ── Utils ────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
-
+ 
 function toast(msg, type = 'ok') {
   const el = $('toast');
   el.textContent = msg;
@@ -443,50 +478,50 @@ function toast(msg, type = 'ok') {
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 3000);
 }
-
+ 
 function showSpinner(id, show) {
   $(id).classList.toggle('hidden', !show);
 }
-
+ 
 function median(arr) {
   if (!arr.length) return 0;
   const s = [...arr].sort((a, b) => a - b);
   const m = Math.floor(s.length / 2);
   return s.length % 2 === 0 ? Math.round((s[m - 1] + s[m]) / 2) : s[m];
 }
-
+ 
 function mean(arr) {
   if (!arr.length) return 0;
   return Math.round(arr.reduce((a, b) => a + b, 0) / arr.length);
 }
-
+ 
 function fmtDate(dateStr) {
   // dateStr = "YYYY-MM-DD"
   const [y, m, d] = dateStr.split('-');
   return `${d}/${m}/${y}`;
 }
-
+ 
 function fmtDateShort(dateStr) {
   const [, , d] = dateStr.split('-');
   return d;
 }
-
+ 
 function pad2(n) { return String(n).padStart(2, '0'); }
-
+ 
 // Format a Date object as YYYY-MM-DD using LOCAL time (avoids UTC shift bugs)
 function isoLocal(d) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
-
+ 
 function todayISO() {
   return isoLocal(new Date());
 }
-
+ 
 function nowTime() {
   const n = new Date();
   return `${pad2(n.getHours())}:${pad2(n.getMinutes())}`;
 }
-
+ 
 function monthRange() {
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth();
@@ -494,7 +529,7 @@ function monthRange() {
   const last  = isoLocal(new Date(y, m + 1, 0));
   return { first, last };
 }
-
+ 
 // Rolling 30-day window ending today (inclusive)
 function last30Range() {
   const today = new Date();
@@ -502,13 +537,13 @@ function last30Range() {
   start.setDate(start.getDate() - 29);
   return { first: isoLocal(start), last: isoLocal(today) };
 }
-
+ 
 // "YYYY-MM-DD" → "dd/mm"
 function fmtDayMonth(dateStr) {
   const [, m, d] = dateStr.split('-');
   return `${d}/${m}`;
 }
-
+ 
 // Returns an array of "YYYY-MM-DD" strings covering every day from
 // firstISO to lastISO inclusive (local time, no timezone drift).
 function dateRange(firstISO, lastISO) {
@@ -522,7 +557,7 @@ function dateRange(firstISO, lastISO) {
   }
   return out;
 }
-
+ 
 // ── Connectivity check ───────────────────────────────────────
 async function checkConnection() {
   try {
@@ -535,28 +570,28 @@ async function checkConnection() {
     $('conn-label').textContent = 'erreur — vérifier config';
   }
 }
-
+ 
 // ── Tab switching ────────────────────────────────────────────
 function switchTab(tab) {
-  ['saisie', 'stats'].forEach(t => {
+  ['saisie', 'stats', 'analyse'].forEach(t => {
     $(`tab-${t}`).classList.toggle('hidden', t !== tab);
     document.querySelector(`[data-tab="${t}"]`).classList.toggle('active', t === tab);
   });
-  if (tab === 'stats') loadStats();
+  if (tab === 'stats' || tab === 'analyse') loadStats();
 }
-
+ 
 // ── HISTORY (tab saisie) ─────────────────────────────────────
 async function loadHistory() {
   const period = $('hist-period').value;
   showSpinner('hist-spinner', true);
   $('day-summary').classList.add('hidden');
-
+ 
   try {
     let query = db.from('calories')
       .select('*')
       .order('entry_date', { ascending: false })
       .order('entry_time', { ascending: false });
-
+ 
     const today = todayISO();
     if (period === 'today') {
       query = query.eq('entry_date', today);
@@ -567,12 +602,12 @@ async function loadHistory() {
       const { first, last } = monthRange();
       query = query.gte('entry_date', first).lte('entry_date', last);
     }
-
+ 
     const { data, error } = await query;
     if (error) throw error;
-
+ 
     renderHistTable(data || []);
-
+ 
     // summary only for today (includes the basal metabolism in the net)
     if (period === 'today') {
       const rows = data || [];
@@ -587,7 +622,7 @@ async function loadHistory() {
       $('day-summary').classList.remove('hidden');
       $('day-summary').classList.add('flex');
     }
-
+ 
   } catch (e) {
     toast('Erreur de chargement : ' + e.message, 'err');
     $('hist-body').innerHTML = `<tr><td colspan="5" class="text-center text-muted py-8 text-sm">Erreur de chargement</td></tr>`;
@@ -595,7 +630,7 @@ async function loadHistory() {
     showSpinner('hist-spinner', false);
   }
 }
-
+ 
 function renderHistTable(rows) {
   if (!rows.length) {
     $('hist-body').innerHTML = `<tr><td colspan="5" class="text-center text-muted py-8 text-sm">Aucune entrée pour cette période</td></tr>`;
@@ -618,11 +653,11 @@ function renderHistTable(rows) {
       </tr>`;
   }).join('');
 }
-
+ 
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
+ 
 // ── ADD ENTRY ────────────────────────────────────────────────
 async function addEntry() {
   const date     = $('f-date').value;
@@ -630,14 +665,14 @@ async function addEntry() {
   const type     = $('f-type').value;
   const calories = parseInt($('f-calories').value, 10);
   const poste    = $('f-poste').value.trim();
-
+ 
   $('form-err').classList.add('hidden');
   if (!date || !time) { showFormErr('Date et heure requises.'); return; }
   if (!calories || calories < 1) { showFormErr('Calories invalides (min 1).'); return; }
-
+ 
   $('btn-add').disabled = true;
   showSpinner('form-spinner', true);
-
+ 
   try {
     const { error } = await db.from('calories').insert({ entry_date: date, entry_time: time, type, calories, poste });
     if (error) throw error;
@@ -652,13 +687,13 @@ async function addEntry() {
     showSpinner('form-spinner', false);
   }
 }
-
+ 
 function showFormErr(msg) {
   const el = $('form-err');
   el.textContent = msg;
   el.classList.remove('hidden');
 }
-
+ 
 // ── DELETE ───────────────────────────────────────────────────
 async function deleteEntry(id) {
   if (!confirm('Supprimer cette entrée ?')) return;
@@ -671,7 +706,7 @@ async function deleteEntry(id) {
     toast('Erreur : ' + e.message, 'err');
   }
 }
-
+ 
 // ── EDIT MODAL ───────────────────────────────────────────────
 function openEdit(row) {
   $('edit-id').value       = row.id;
@@ -683,11 +718,11 @@ function openEdit(row) {
   $('modal-err').classList.add('hidden');
   $('modal-overlay').classList.add('open');
 }
-
+ 
 function closeModal() {
   $('modal-overlay').classList.remove('open');
 }
-
+ 
 async function saveEdit() {
   const id       = parseInt($('edit-id').value, 10);
   const date     = $('edit-date').value;
@@ -695,14 +730,14 @@ async function saveEdit() {
   const type     = $('edit-type').value;
   const calories = parseInt($('edit-calories').value, 10);
   const poste    = $('edit-poste').value.trim();
-
+ 
   $('modal-err').classList.add('hidden');
   if (!date || !time) { showModalErr('Date et heure requises.'); return; }
   if (!calories || calories < 1) { showModalErr('Calories invalides.'); return; }
-
+ 
   $('btn-save').disabled = true;
   showSpinner('modal-spinner', true);
-
+ 
   try {
     const { error } = await db.from('calories')
       .update({ entry_date: date, entry_time: time, type, calories, poste })
@@ -718,31 +753,31 @@ async function saveEdit() {
     showSpinner('modal-spinner', false);
   }
 }
-
+ 
 function showModalErr(msg) {
   const el = $('modal-err');
   el.textContent = msg;
   el.classList.remove('hidden');
 }
-
+ 
 // ── STATS ────────────────────────────────────────────────────
 async function loadStats() {
   // Show the configured MB value in the explanatory caption
   $('net-explain').textContent =
     `Net = Consommé − Dépensé sport − ${BASAL_METABOLISM.toLocaleString('fr')} kcal (MB) · jour sans saisie = 0`;
-
+ 
   const { first, last } = last30Range();
-
+ 
   try {
     const { data, error } = await db.from('calories')
       .select('*')
       .gte('entry_date', first)
       .lte('entry_date', last)
       .order('entry_date', { ascending: true });
-
+ 
     if (error) throw error;
     const rows = data || [];
-
+ 
     // ── Group totals by day ──────────────────────────────────
     const byDay = {};
     for (const r of rows) {
@@ -750,7 +785,7 @@ async function loadStats() {
       if (r.type === 'consommation') byDay[r.entry_date].conso += r.calories;
       else                            byDay[r.entry_date].dep   += r.calories;
     }
-
+ 
     // ── Build full date list for the rolling 30-day window ─────
     const dates   = dateRange(first, last);
     const hasData = dates.map(d => !!byDay[d]);
@@ -758,7 +793,7 @@ async function loadStats() {
     const deps    = dates.map(d => (byDay[d] ? byDay[d].dep   : 0));
     // Net = conso - dep - MB, sauf si aucune entrée n'existe ce jour-là → 0
     const nets    = dates.map((d, i) => hasData[i] ? (consos[i] - deps[i] - BASAL_METABOLISM) : 0);
-
+ 
     // ── KPI (moyenne / médiane sur les jours où il y a eu une saisie) ─
     const consosKpi = consos.filter((_, i) => hasData[i]);
     const depsKpi   = deps.filter((_, i) => hasData[i]);
@@ -766,28 +801,54 @@ async function loadStats() {
     $('kpi-med-conso').textContent = median(consosKpi).toLocaleString('fr') + ' kcal';
     $('kpi-avg-dep').textContent   = mean(depsKpi).toLocaleString('fr') + ' kcal';
     $('kpi-med-dep').textContent   = median(depsKpi).toLocaleString('fr') + ' kcal';
-
+ 
+    // ── Analyse KPI (onglet 3) ────────────────────────────────
+    // Net total sur les 30j (positifs + négatifs, jours vides = 0)
+    const totalNet   = nets.reduce((a, b) => a + b, 0);
+    // Moyenne du net sur les jours avec saisie uniquement
+    const netsWithData = nets.filter((_, i) => hasData[i]);
+    const avgNet     = netsWithData.length ? Math.round(netsWithData.reduce((a, b) => a + b, 0) / netsWithData.length) : 0;
+    // Indice camembert : déficit total / kcal d'un camembert (négatif = économie)
+    const camembert  = totalNet / CAMEMBERT_KCAL;
+ 
+    const avgNetEl = $('ana-avg-net');
+    avgNetEl.textContent = (avgNet > 0 ? '+' : '') + avgNet.toLocaleString('fr') + ' kcal';
+    avgNetEl.style.color = avgNet > 0 ? '#f85149' : '#3fb950';
+ 
+    const totalNetEl = $('ana-total-net');
+    totalNetEl.textContent = (totalNet > 0 ? '+' : '') + Math.round(totalNet).toLocaleString('fr') + ' kcal';
+    totalNetEl.style.color = totalNet > 0 ? '#f85149' : '#3fb950';
+ 
+    const camEl = $('ana-camembert');
+    const camAbs = Math.abs(camembert);
+    camEl.textContent = (camembert > 0 ? '+' : '-') + camAbs.toFixed(2);
+    camEl.style.color = camembert > 0 ? '#f85149' : '#3fb950';
+    $('ana-camembert-sub').textContent =
+      camembert <= 0
+        ? `${camAbs.toFixed(1)} camembert${camAbs >= 2 ? 's' : ''} de 250g gagnés`
+        : `${camAbs.toFixed(1)} camembert${camAbs >= 2 ? 's' : ''} de 250g en excès`;
+ 
     // ── Charts ────────────────────────────────────────────────
     renderChart(dates, nets);
     renderPieCharts(rows);
-
+ 
     // ── Detail table ──────────────────────────────────────────
     renderStatsTable(dates, consos, deps, nets, hasData);
-
+ 
   } catch (e) {
     toast('Erreur stats : ' + e.message, 'err');
   }
 }
-
+ 
 function renderChart(dates, nets) {
   const labels = dates.map(fmtDayMonth);
-
+ 
   // Net > 0 means a calorie surplus (red) ; Net <= 0 means a deficit (green)
   const barColors    = nets.map(n => n > 0 ? 'rgba(248,81,73,0.75)' : 'rgba(63,185,80,0.75)');
   const borderColors = nets.map(n => n > 0 ? '#f85149' : '#3fb950');
-
+ 
   if (chartNet) chartNet.destroy();
-
+ 
   const ctx = $('chart-net').getContext('2d');
   chartNet = new Chart(ctx, {
     type: 'bar',
@@ -839,7 +900,7 @@ function renderChart(dates, nets) {
     }
   });
 }
-
+ 
 function renderStatsTable(dates, consos, deps, nets, hasData) {
   if (!dates.length) {
     $('stats-body').innerHTML = `<tr><td colspan="5" class="text-center text-muted py-6 text-sm">Aucune donnée sur cette période</td></tr>`;
@@ -860,9 +921,9 @@ function renderStatsTable(dates, consos, deps, nets, hasData) {
       </tr>`;
   }).join('');
 }
-
+ 
 // ── DONUT CHARTS: répartition par poste ──────────────────────
-
+ 
 // Generates N visually distinct, evenly-spaced HSL colors
 function paletteColors(n) {
   const colors = [];
@@ -872,7 +933,7 @@ function paletteColors(n) {
   }
   return colors;
 }
-
+ 
 // Groups rows of a given type by "poste" and returns
 // { labels: [...], values: [...], total: number }
 // "values" = la MÉDIANE des calories par entrée pour ce poste
@@ -894,22 +955,22 @@ function groupByPoste(rows, type) {
   const total  = values.reduce((a, b) => a + b, 0);
   return { labels, values, total };
 }
-
+ 
 function renderPieCharts(rows) {
   const conso = groupByPoste(rows, 'consommation');
   const dep   = groupByPoste(rows, 'depense');
-
+ 
   renderSinglePie('chart-pie-conso', 'legend-conso', 'empty-conso', conso, chartPieConso, c => chartPieConso = c);
   renderSinglePie('chart-pie-dep',   'legend-dep',   'empty-dep',   dep,   chartPieDep,   c => chartPieDep   = c);
 }
-
+ 
 function renderSinglePie(canvasId, legendId, emptyId, group, existingChart, setChart) {
   if (existingChart) existingChart.destroy();
-
+ 
   const emptyEl  = $(emptyId);
   const legendEl = $(legendId);
   const canvasEl = $(canvasId);
-
+ 
   if (!group.labels.length || group.total === 0) {
     emptyEl.classList.remove('hidden');
     legendEl.innerHTML = '';
@@ -917,13 +978,13 @@ function renderSinglePie(canvasId, legendId, emptyId, group, existingChart, setC
     setChart(null);
     return;
   }
-
+ 
   emptyEl.classList.add('hidden');
   canvasEl.style.display = 'block';
-
+ 
   const colors = paletteColors(group.labels.length);
   const total  = group.total;
-
+ 
   const ctx = canvasEl.getContext('2d');
   const chart = new Chart(ctx, {
     type: 'doughnut',
@@ -960,7 +1021,7 @@ function renderSinglePie(canvasId, legendId, emptyId, group, existingChart, setC
     }
   });
   setChart(chart);
-
+ 
   // ── Custom legend: name, absolute value (kcal) and relative (%) ──
   legendEl.innerHTML = group.labels.map((label, i) => {
     const val = group.values[i];
@@ -975,23 +1036,22 @@ function renderSinglePie(canvasId, legendId, emptyId, group, existingChart, setC
       </div>`;
   }).join('');
 }
-
+ 
 // ── KEYBOARD: Escape closes modal ─────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModal();
 });
-
+ 
 // ── INIT ─────────────────────────────────────────────────────
 (async function init() {
   // Set default form date/time
   $('f-date').value = todayISO();
   $('f-time').value = nowTime();
-
+ 
   await checkConnection();
   await loadHistory();
 })();
 </script>
 </body>
 </html>
-
 
