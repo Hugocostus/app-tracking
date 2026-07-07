@@ -426,7 +426,6 @@ function mean(arr) {
 }
 
 function fmtDate(dateStr) {
-  // dateStr = "YYYY-MM-DD"
   const [y, m, d] = dateStr.split('-');
   return `${d}/${m}/${y}`;
 }
@@ -438,7 +437,6 @@ function fmtDateShort(dateStr) {
 
 function pad2(n) { return String(n).padStart(2, '0'); }
 
-// Format a Date object as YYYY-MM-DD using LOCAL time (avoids UTC shift bugs)
 function isoLocal(d) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
@@ -460,7 +458,6 @@ function monthRange() {
   return { first, last };
 }
 
-// Rolling 30-day window ending today (inclusive)
 function last30Range() {
   const today = new Date();
   const start = new Date(today);
@@ -468,14 +465,11 @@ function last30Range() {
   return { first: isoLocal(start), last: isoLocal(today) };
 }
 
-// "YYYY-MM-DD" → "dd/mm"
 function fmtDayMonth(dateStr) {
   const [, m, d] = dateStr.split('-');
   return `${d}/${m}`;
 }
 
-// Returns an array of "YYYY-MM-DD" strings covering every day from
-// firstISO to lastISO inclusive (local time, no timezone drift).
 function dateRange(firstISO, lastISO) {
   const [fy, fm, fd] = firstISO.split('-').map(Number);
   const [ly, lm, ld] = lastISO.split('-').map(Number);
@@ -538,7 +532,6 @@ async function loadHistory() {
 
     renderHistTable(data || []);
 
-    // summary only for today (includes the basal metabolism in the net)
     if (period === 'today') {
       const rows = data || [];
       const conso = rows.filter(r => r.type === 'consommation').reduce((a, r) => a + r.calories, 0);
@@ -695,11 +688,9 @@ async function loadStats() {
   const period = $('stats-period').value;
   showSpinner('stats-spinner', true);
 
-  // Mettre à jour l'explication textuelle
   $('net-explain').textContent =
     `Net = Consommé − Dépensé sport − ${BASAL_METABOLISM.toLocaleString('fr')} kcal (MB) · jour sans saisie = 0`;
 
-  // Gestion dynamique des titres selon le filtre sélectionné
   const labelPeriod = period === '30days' ? '30 derniers jours' : 'Tout depuis le début';
   $('title-kpi').textContent = `${labelPeriod} — KPI`;
   $('title-net').textContent = `Net quotidien — ${labelPeriod}`;
@@ -723,7 +714,6 @@ async function loadStats() {
     if (error) throw error;
     const rows = data || [];
 
-    // Si option "Tout depuis le début" sélectionnée, la première date est celle de la première entrée
     if (period === 'all') {
       if (rows.length > 0) {
         first = rows[0].entry_date;
@@ -732,7 +722,7 @@ async function loadStats() {
       }
     }
 
-    // ── Group totals by day ──────────────────────────────────
+    // Totals by day
     const byDay = {};
     for (const r of rows) {
       if (!byDay[r.entry_date]) byDay[r.entry_date] = { conso: 0, dep: 0 };
@@ -740,15 +730,14 @@ async function loadStats() {
       else                            byDay[r.entry_date].dep   += r.calories;
     }
 
-    // ── Build full date list for the selected window ─────
+    // Build timeline range
     const dates   = dateRange(first, last);
     const hasData = dates.map(d => !!byDay[d]);
     const consos  = dates.map(d => (byDay[d] ? byDay[d].conso : 0));
     const deps    = dates.map(d => (byDay[d] ? byDay[d].dep   : 0));
-    // Net = conso - dep - MB, sauf si aucune entrée n'existe ce jour-là → 0
     const nets    = dates.map((d, i) => hasData[i] ? (consos[i] - deps[i] - BASAL_METABOLISM) : 0);
 
-    // ── KPI (moyenne / médiane sur les jours où il y a eu une saisie) ─
+    // Filter KPI values
     const consosKpi = consos.filter((_, i) => hasData[i]);
     const depsKpi   = deps.filter((_, i) => hasData[i]);
     $('kpi-avg-conso').textContent = mean(consosKpi).toLocaleString('fr') + ' kcal';
@@ -756,11 +745,11 @@ async function loadStats() {
     $('kpi-avg-dep').textContent   = mean(depsKpi).toLocaleString('fr') + ' kcal';
     $('kpi-med-dep').textContent   = median(depsKpi).toLocaleString('fr') + ' kcal';
 
-    // ── Charts ────────────────────────────────────────────────
+    // Update charts & breakdown lists
     renderChart(dates, nets);
     renderPieCharts(rows);
 
-    // ── Detail table ──────────────────────────────────────────
+    // Detail table view
     renderStatsTable(dates, consos, deps, nets, hasData);
 
   } catch (e) {
@@ -772,8 +761,6 @@ async function loadStats() {
 
 function renderChart(dates, nets) {
   const labels = dates.map(fmtDayMonth);
-
-  // Net > 0 means a calorie surplus (red) ; Net <= 0 means a deficit (green)
   const barColors    = nets.map(n => n > 0 ? 'rgba(248,81,73,0.75)' : 'rgba(63,185,80,0.75)');
   const borderColors = nets.map(n => n > 0 ? '#f85149' : '#3fb950');
 
@@ -836,7 +823,6 @@ function renderStatsTable(dates, consos, deps, nets, hasData) {
     $('stats-body').innerHTML = `<tr><td colspan="5" class="text-center text-muted py-6 text-sm">Aucune donnée sur cette période</td></tr>`;
     return;
   }
-  // Affichage du tableau du plus récent au plus ancien pour un meilleur confort visuel si la liste grandit
   const reversedDates = [...dates].reverse();
   $('stats-body').innerHTML = reversedDates.map(d => {
     const i = dates.indexOf(d);
@@ -857,7 +843,6 @@ function renderStatsTable(dates, consos, deps, nets, hasData) {
 
 // ── DONUT CHARTS: répartition par poste ──────────────────────
 
-// Generates N visually distinct, evenly-spaced HSL colors
 function paletteColors(n) {
   const colors = [];
   for (let i = 0; i < n; i++) {
@@ -867,10 +852,6 @@ function paletteColors(n) {
   return colors;
 }
 
-// Groups rows of a given type by "poste" and returns
-// { labels: [...], values: [...], total: number }
-// "values" = la MÉDIANE des calories par entrée pour ce poste
-// (et non le cumul), comme demandé.
 function groupByPoste(rows, type) {
   const map = {};
   for (const r of rows) {
@@ -879,7 +860,6 @@ function groupByPoste(rows, type) {
     if (!map[key]) map[key] = [];
     map[key].push(r.calories);
   }
-  // Médiane par poste, triée décroissante pour un graphique/légende plus lisible
   const entries = Object.entries(map)
     .map(([key, arr]) => [key, median(arr)])
     .sort((a, b) => b[1] - a[1]);
@@ -935,7 +915,7 @@ function renderSinglePie(canvasId, legendId, emptyId, group, existingChart, setC
       maintainAspectRatio: false,
       cutout: '62%',
       plugins: {
-        legend: { display: false }, // custom legend rendered below the chart
+        legend: { display: false },
         tooltip: {
           backgroundColor: '#161b22',
           borderColor: '#21262d',
@@ -955,7 +935,6 @@ function renderSinglePie(canvasId, legendId, emptyId, group, existingChart, setC
   });
   setChart(chart);
 
-  // ── Custom legend: name, absolute value (kcal) and relative (%) ──
   legendEl.innerHTML = group.labels.map((label, i) => {
     const val = group.values[i];
     const pct = total > 0 ? (val / total * 100) : 0;
@@ -977,7 +956,6 @@ document.addEventListener('keydown', e => {
 
 // ── INIT ─────────────────────────────────────────────────────
 (async function init() {
-  // Set default form date/time
   $('f-date').value = todayISO();
   $('f-time').value = nowTime();
 
@@ -987,7 +965,3 @@ document.addEventListener('keydown', e => {
 </script>
 </body>
 </html>
-</script>
-</body>
-</html>
-
